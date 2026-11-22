@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Przesyłanie formularza i JSON — Form Viewer{% endblock %}
+
+{% block content %}
+  <h1>Cyfryzacja formularzy — przesyłanie i wizualizacja</h1>
+  <p class="lead">
+    Prześlij blankiet formularza do <code>form-api</code>, aby pobrać wygenerowany JSON i wyświetlić go jako formularz eUsługi, albo wgraj gotowy plik JSON.
+  </p>
+
+  {% if stored %}
+    <section class="card highlight-card">
+      <h2>Ostatnio wczytany wynik</h2>
+      <p><strong>Źródło:</strong> {{ stored.source_name }}</p>
+      {% with summary = stored %}{% include "_validation_summary.html" %}{% endwith %}
+      <div class="actions-row">
+        <a class="btn btn-primary" href="{{ url_for('viewer.preview_form') }}">Wyświetl jako formularz</a>
+        <a class="btn btn-secondary" href="{{ url_for('viewer.view_json') }}">Podejrzyj JSON</a>
+        <a class="btn btn-secondary" href="{{ url_for('viewer.download_json') }}">Pobierz plik .json</a>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="card single-col">
+    <h2>1. Wyślij plik formularza do form-api</h2>
+    <form action="{{ url_for('viewer.upload_form') }}" method="post" enctype="multipart/form-data" class="stack-form">
+      <div class="field-group">
+        <label for="form_file">Plik formularza ({{ allowed_extensions|map("replace", ".", "")|map("upper")|join(", ") }}) *</label>
+        <input id="form_file" name="form_file" type="file"
+               accept="{{ allowed_extensions|join(',') }}" required>
+        <small class="help-text">
+          Maksymalny rozmiar: {{ settings.max_upload_size_bytes }} bajtów, nazwa maks. 250 znaków bez znaków specjalnych.
+        </small>
+      </div>
+
+      <div class="actions-row">
+        <button type="submit" name="action" value="preview_form" class="btn btn-primary">
+          Wyślij i pokaż formularz
+        </button>
+        <button type="submit" name="action" value="view_json" class="btn btn-secondary">
+          Wyślij i pokaż JSON
+        </button>
+        <button type="submit" name="action" value="download_json" class="btn btn-secondary">
+          Wyślij i pobierz .json
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card single-col">
+    <h2>2. Wgraj gotowy plik JSON lub wklej strukturę JSON</h2>
+    <form action="{{ url_for('viewer.upload_json') }}" method="post" enctype="multipart/form-data" class="stack-form">
+      <div class="field-group">
+        <label for="json_file">Plik JSON formularza (.json)</label>
+        <input id="json_file" name="json_file" type="file" accept=".json,application/json">
+      </div>
+
+      <div class="field-group">
+        <label for="json_text">Lub wklej JSON formularza</label>
+        <textarea id="json_text" name="json_text" rows="6"
+                  placeholder='{"title": "Nazwa usługi", "tabs": [...], "flow": {"links": [...]}}'></textarea>
+      </div>
+
+      <div class="actions-row">
+        <button type="submit" name="action" value="preview_form" class="btn btn-primary">
+          Renderuj formularz z JSON
+        </button>
+        <button type="submit" name="action" value="download_json" class="btn btn-secondary">
+          Pobierz jako .json
+        </button>
+      </div>
+    </form>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    function resetButtons() {
+      document.querySelectorAll(".stack-form .btn").forEach(function (btn) {
+        btn.classList.remove("is-loading");
+        btn.removeAttribute("aria-busy");
+        btn.disabled = false;
+      });
+      document.querySelectorAll(".stack-form").forEach(function (form) {
+        delete form.dataset.submitting;
+      });
+    }
+
+    document.querySelectorAll(".stack-form").forEach(function (form) {
+      form.addEventListener("submit", function (event) {
+        if (form.dataset.submitting) {
+          event.preventDefault();
+          return;
+        }
+        var submitter = event.submitter;
+        if (!submitter || submitter.value === "download_json") {
+          return;
+        }
+        form.dataset.submitting = "1";
+        submitter.classList.add("is-loading");
+        submitter.setAttribute("aria-busy", "true");
+        setTimeout(function () {
+          form.querySelectorAll(".btn").forEach(function (btn) {
+            btn.disabled = true;
+          });
+        }, 0);
+      });
+    });
+
+    window.addEventListener("pageshow", resetButtons);
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}{{ form.title|safe }} — Podgląd formularza{% endblock %}
+
+{% macro render_field(f) %}
+  {% set is_conditional = f.show_queries|length > 0 %}
+  <div class="form-item{% if is_conditional %} conditional-field{% endif %}"
+       {% if is_conditional %}style="display: none;"{% endif %}
+       data-field-type="{{ f.field_type }}"
+       data-tech-name="{{ f.tech_name }}"
+       data-show-conditions='{{ f.show_conditions|tojson }}'>
+
+    {% if f.field_type == "TEXT_BLOCK" or f.field_type == "INFO_SECTION" %}
+      <div class="info-block">
+        {% if f.title %}<h3>{{ f.title|safe }}</h3>{% endif %}
+        {% if f.description %}<div>{{ f.description|safe }}</div>{% endif %}
+      </div>
+
+    {% elif f.field_type == "CONSENT_SECTION" %}
+      <fieldset class="consent-box">
+        {% if f.title %}<legend>{{ f.title|safe }}{% if f.consent_required %} <span class="req">*</span>{% endif %}</legend>{% endif %}
+        {% if f.description %}<div class="help-text">{{ f.description|safe }}</div>{% endif %}
+        {% for c in f.consents %}
+          <label class="checkbox-row">
+            <input type="checkbox" {% if c.get("required") %}required{% endif %}>
+            <span>{{ c.get("description_html")|safe }}</span>
+          </label>
+        {% endfor %}
+      </fieldset>
+
+    {% elif f.field_type in ["SECTION", "REPEATING_SECTION"] %}
+      <fieldset class="section-box{% if f.field_type == 'REPEATING_SECTION' %} repeating-section{% endif %}">
+        {% if f.title %}<legend>{{ f.title|safe }}</legend>{% endif %}
+        {% if f.description %}<div class="help-text">{{ f.description|safe }}</div>{% endif %}
+
+        {% if f.field_type == "REPEATING_SECTION" %}
+          <div class="repeating-entries" data-repeating-container>
+            <div class="repeating-entry">
+              <div class="entry-header">
+                <span>Wpis #1</span>
+                <button type="button" class="btn-small btn-remove-entry" disabled>Usuń wpis</button>
+              </div>
+              <div class="entry-fields">
+                {% for child in f.children %}
+                  {{ render_field(child) }}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-add-entry">+ Dodaj kolejny wpis</button>
+        {% else %}
+          <div class="section-fields">
+            {% for child in f.children %}
+              {{ render_field(child) }}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </fieldset>
+
+    {% else %}
+      {% set dom_id = "fld_" ~ f.field_id %}
+      {% set input_types = {"NUMBER": "number", "DATEPICKER": "date"} %}
+      <div class="field-group">
+        {% if not f.hide_label %}
+          <label for="{{ dom_id }}">
+            {{ f.title|safe }}{% if f.required %} <span class="req" title="Pole wymagane">*</span>{% endif %}
+          </label>
+        {% endif %}
+        {% if f.tooltip_message %}
+          <div class="tooltip-note">Podpowiedź: {{ f.tooltip_message|safe }}</div>
+        {% endif %}
+        {% if f.description %}
+          <div class="help-text">{{ f.description|safe }}</div>
+        {% endif %}
+
+        {% if f.field_type == "TEXTAREA" %}
+          <textarea id="{{ dom_id }}" rows="4"
+                    {% if f.read_only %}readonly{% endif %}
+                    {% if f.required %}required{% endif %}>{{ f.default_value }}</textarea>
+
+        {% elif f.field_type == "FILE_UPLOADER" %}
+          <input id="{{ dom_id }}" type="file"
+                 {% if f.read_only %}disabled{% endif %}>
+
+        {% elif f.field_type == "SELECT" %}
+          {% set def_val = (f.default_value or "")|lower %}
+          <select id="{{ dom_id }}"
+                  class="js-trigger-field"
+                  data-source-tech="{{ f.tech_name }}"
+                  {% if f.read_only %}disabled{% endif %}>
+            <option value="">-- wybierz --</option>
+            {% for opt in f.options %}
+              {% set is_selected = def_val and (
+                opt.get("name", "")|lower == def_val
+                or opt.get("techName", "")|lower == def_val
+                or opt.get("id", "")|lower == def_val
+              ) %}
+              <option value="{{ opt.get("name") or opt.get("techName") or opt.get("id") }}"
+                      data-tech="{{ opt.get('techName', '') }}"
+                      {% if is_selected %}selected{% endif %}>{{ opt.get("name_html")|safe }}</option>
+            {% endfor %}
+          </select>
+
+        {% elif f.field_type in ["RADIO", "CHECKBOX"] %}
+          {% set kind = f.field_type|lower %}
+          <div class="choice-group">
+            {% for opt in f.options %}
+              <label class="{{ kind }}-row">
+                <input type="{{ kind }}"
+                       {% if kind == "radio" %}name="radio_{{ f.field_id or f.tech_name }}"{% endif %}
+                       value="{{ opt.get("name") or opt.get("techName") or opt.get("id") }}"
+                       data-tech="{{ opt.get('techName', '') }}"
+                       class="js-trigger-field"
+                       data-source-tech="{{ f.tech_name }}"
+                       {% if f.read_only %}disabled{% endif %}>
+                <span>{{ opt.get("name_html")|safe }}{% if f.hide_label and f.required %} <span class="req" title="Pole wymagane">*</span>{% endif %}</span>
+              </label>
+            {% endfor %}
+          </div>
+
+        {% else %}
+          <input id="{{ dom_id }}" type="{{ input_types.get(f.field_type, "text") }}"
+                 value="{{ f.default_value }}"
+                 class="js-trigger-field"
+                 data-source-tech="{{ f.tech_name }}"
+                 {% if f.read_only %}readonly{% endif %}
+                 {% if f.required %}required{% endif %}>
+        {% endif %}
+
+        {% set extra_validations = f.validations|reject("equalto", "REQUIRED")|list %}
+        {% if f.dictionary_name or extra_validations or is_conditional %}
+          <div class="meta-badges">
+            {% if f.dictionary_name %}
+              <span class="badge">Słownik: {{ f.dictionary_name }}</span>
+            {% endif %}
+            {% if extra_validations %}
+              <span class="badge">Walidacje: {{ extra_validations|join(", ") }}</span>
+            {% endif %}
+            {% if is_conditional %}
+              <span class="badge badge-warn" title="{{ f.show_queries|join(' | ') }}">
+                Warunek widoczności (JSONata)
+              </span>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{% block content %}
+  <div class="form-header-bar">
+    <div>
+      <h1>{{ form.title|safe }}</h1>
+      <p class="help-text">Źródło: <strong>{{ result.source_name }}</strong> (podgląd wygenerowany z JSON).</p>
+    </div>
+    <div class="actions-row">
+      <a class="btn btn-secondary" href="{{ url_for('viewer.view_json') }}">Podejrzyj JSON</a>
+      <a class="btn btn-secondary" href="{{ url_for('viewer.download_json') }}">Pobierz .json</a>
+      <a class="btn btn-secondary" href="{{ url_for('viewer.index') }}">Wróć</a>
+    </div>
+  </div>
+
+  {% with summary = result %}{% include "_validation_summary.html" %}{% endwith %}
+
+  <div class="tabs-bar" role="tablist" aria-label="Strony formularza">
+    {% for tab in form.tabs %}
+      <button type="button"
+              role="tab"
+              class="tab-btn{% if loop.first %} active{% endif %}"
+              data-tab-target="tab_{{ loop.index0 }}"
+              aria-selected="{{ 'true' if loop.first else 'false' }}">
+        {{ loop.index }}. {{ tab.title|safe }}
+        <span class="tab-tag">{{ tab.tab_type }}</span>
+      </button>
+    {% endfor %}
+  </div>
+
+  <form class="eform-single-col" onsubmit="event.preventDefault(); alert('To jest pogląd formularza z JSON — wysyłka urzędowa jest wyłączona.');">
+    {% for tab in form.tabs %}
+      <section id="tab_{{ loop.index0 }}"
+               role="tabpanel"
+               class="tab-panel{% if loop.first %} active{% endif %}">
+        {% for fld in tab.fields %}
+          {{ render_field(fld) }}
+        {% endfor %}
+
+        <div class="tab-nav-footer">
+          {% if not loop.first %}
+            <button type="button" class="btn btn-secondary js-prev-tab" data-prev-index="{{ loop.index0 - 1 }}">
+              Poprzednia strona
+            </button>
+          {% endif %}
+          {% if not loop.last %}
+            <button type="button" class="btn btn-primary js-next-tab" data-next-index="{{ loop.index0 + 1 }}">
+              Następna strona
+            </button>
+          {% else %}
+            <button type="submit" class="btn btn-primary">
+              Zakończ podgląd (FINISH)
+            </button>
+          {% endif %}
+        </div>
+      </section>
+    {% endfor %}
+  </form>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='form_preview.js') }}"></script>
+{% endblock %}

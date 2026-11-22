@@ -1,0 +1,23 @@
+[project]
+name = "form-viewer"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "flask>=3.1.0",
+    "gunicorn>=23.0.0",
+    "httpx>=0.28.0",
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+ruff = ">=0.14"
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]

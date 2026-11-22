@@ -1,0 +1,6 @@
+{% if summary.critical_count or summary.warning_count %}
+  <div class="warnings-box">
+    <strong>Wynik walidacji:</strong>
+    błędy krytyczne: {{ summary.critical_count }}, ostrzeżenia: {{ summary.warning_count }}.
+  </div>
+{% endif %}

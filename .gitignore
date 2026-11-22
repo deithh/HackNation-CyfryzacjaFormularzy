@@ -1,0 +1,7 @@
+debug-dumps/
+.venv/
+/.env.local
+__pycache__/
+.DS_Store
+.idea/
+/form-viewer/.env

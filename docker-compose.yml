@@ -1,0 +1,61 @@
+services:
+  tika:
+    build:
+      context: ./tika
+      dockerfile: Dockerfile
+    command: ["-p", "8081", "-c", "/tika-config.xml"]
+    expose:
+      - "8081"
+    networks:
+      - form_digitizer_net
+    restart: unless-stopped
+
+  unoserver:
+    build:
+      context: ./unoserver
+      dockerfile: Dockerfile
+    expose:
+      - "2003"
+    networks:
+      - form_digitizer_net
+    restart: unless-stopped
+
+  form-api:
+    build:
+      context: ./form-api
+      dockerfile: Dockerfile
+    env_file:
+      - path: .env
+        required: false
+      - path: .env.local
+        required: false
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      tika:
+        condition: service_started
+      unoserver:
+        condition: service_healthy
+    networks:
+      - form_digitizer_net
+    restart: unless-stopped
+
+  form-viewer:
+    build:
+      context: ./form-viewer
+      dockerfile: Dockerfile
+    env_file:
+      - path: form-viewer/.env
+        required: false
+    ports:
+      - "127.0.0.1:5001:5000"
+    depends_on:
+      - form-api
+    networks:
+      - form_digitizer_net
+    restart: unless-stopped
+
+
+networks:
+  form_digitizer_net:
+    driver: bridge

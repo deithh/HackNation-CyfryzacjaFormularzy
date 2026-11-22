@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Podgląd JSON — {{ result.source_name }}{% endblock %}
+
+{% block content %}
+  <h1>Struktura JSON formularza</h1>
+  <p class="lead"><strong>Źródło:</strong> {{ result.source_name }}</p>
+
+  {% with summary = result %}{% include "_validation_summary.html" %}{% endwith %}
+
+  {% if result.warnings %}
+    <div class="warnings-box">
+      <strong>Ostrzeżenia:</strong>
+      <ul>
+        {% for w in result.warnings %}
+          <li>{{ w }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="actions-row">
+    <a class="btn btn-primary" href="{{ url_for('viewer.preview_form') }}">Wyświetl jako formularz</a>
+    <a class="btn btn-secondary" href="{{ url_for('viewer.download_json') }}">Pobierz plik .json</a>
+    <a class="btn btn-secondary" href="{{ url_for('viewer.index') }}">Wróć</a>
+  </div>
+
+  <pre class="json-box"><code>{{ result.raw_json_text }}</code></pre>
+{% endblock %}

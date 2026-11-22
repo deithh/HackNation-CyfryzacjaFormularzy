@@ -1,0 +1,24 @@
+{
+  "aliases": ["Kraje", "KRAJ", "KRAJE", "Kraj"],
+  "items": [
+    { "id": "polska", "name": "Polska", "techName": "PL" },
+    { "id": "niemcy", "name": "Niemcy", "techName": "DE" },
+    { "id": "czechy", "name": "Czechy", "techName": "CZ" },
+    { "id": "slowacja", "name": "Słowacja", "techName": "SK" },
+    { "id": "ukraina", "name": "Ukraina", "techName": "UA" },
+    { "id": "litwa", "name": "Litwa", "techName": "LT" },
+    { "id": "bialorus", "name": "Białoruś", "techName": "BY" },
+    { "id": "wielka_brytania", "name": "Wielka Brytania", "techName": "GB" },
+    { "id": "irlandia", "name": "Irlandia", "techName": "IE" },
+    { "id": "francja", "name": "Francja", "techName": "FR" },
+    { "id": "wlochy", "name": "Włochy", "techName": "IT" },
+    { "id": "hiszpania", "name": "Hiszpania", "techName": "ES" },
+    { "id": "holandia", "name": "Holandia", "techName": "NL" },
+    { "id": "belgia", "name": "Belgia", "techName": "BE" },
+    { "id": "szwecja", "name": "Szwecja", "techName": "SE" },
+    { "id": "norwegia", "name": "Norwegia", "techName": "NO" },
+    { "id": "stany_zjednoczone", "name": "Stany Zjednoczone", "techName": "US" },
+    { "id": "kanada", "name": "Kanada", "techName": "CA" },
+    { "id": "inny", "name": "Inny kraj", "techName": "OTHER" }
+  ]
+}
